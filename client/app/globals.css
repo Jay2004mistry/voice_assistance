@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen;
+  }
+}
+
+@layer components {
+  /* Floating Chat Button */
+  .floating-chat-btn {
+    @apply fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full 
+           bg-gradient-to-r from-blue-500 to-purple-500 
+           flex items-center justify-center cursor-pointer
+           shadow-2xl transition-all duration-300
+           hover:scale-110 active:scale-95;
+  }
+  
+  /* Chat Window */
+  .chat-window {
+    @apply fixed z-50 bg-black/80 backdrop-blur-xl
+           rounded-2xl shadow-2xl border border-white/20
+           transition-all duration-300 overflow-hidden;
+    width: 380px;
+    height: 600px;
+    bottom: 90px;
+    right: 24px;
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  .chat-window.closed {
+    display: none;
+  }
+  
+  /* Chat Window - Mobile Responsive */
+  @media (max-width: 640px) {
+    .chat-window {
+      width: calc(100vw - 32px);
+      height: calc(100vh - 100px);
+      bottom: 80px;
+      right: 16px;
+      left: 16px;
+      width: auto;
+    }
+  }
+  
+  /* Phone Frame inside Chat */
+  .chat-phone-frame {
+    @apply relative mx-auto bg-black rounded-[2rem] shadow-2xl;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .chat-phone-screen {
+    @apply relative w-full h-full overflow-hidden rounded-[1.8rem] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900;
+  }
+  
+  /* Status Bar */
+  .status-bar {
+    @apply flex justify-between items-center px-5 pt-2 pb-1.5 text-white text-xs font-medium bg-black/20 backdrop-blur-sm;
+  }
+  
+  /* Chat Bubbles */
+  .message-user {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl rounded-br-md max-w-[85%] p-2.5 shadow-lg;
+  }
+  
+  .message-ai {
+    @apply bg-white/10 text-white backdrop-blur-sm border border-white/20 rounded-2xl rounded-bl-md max-w-[85%] p-2.5 shadow-lg;
+  }
+  
+  /* Home Indicator */
+  .home-indicator {
+    @apply absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-white/30 rounded-full;
+  }
+  
+  /* Typing Indicator */
+  .typing-indicator {
+    @apply flex gap-1 items-center;
+  }
+  
+  .typing-dot {
+    @apply w-1.5 h-1.5 bg-purple-400 rounded-full animate-wave;
+  }
+  
+  /* Unread Badge */
+  .unread-badge {
+    @apply absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold
+           rounded-full w-5 h-5 flex items-center justify-center;
+  }
+}
+
+@layer utilities {
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.5); opacity: 0.5; }
+    50% { transform: scaleY(1.5); opacity: 1; }
+  }
+  
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  
+  .animate-wave {
+    animation: wave 1.2s ease-in-out infinite;
+  }
+  
+  .animate-pulse-ring {
+    animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-bounce {
+    animation: bounce 0.5s ease-in-out;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-white/10 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-white/30 rounded-full;
+  }
+}

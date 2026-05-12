@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Microphone</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a2e; color: white; text-align: center; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; background: purple; color: white; border: none; border-radius: 10px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 20px; background: #16213e; border-radius: 10px; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Microphone & Speech Recognition Test</h1>
+    <button onclick="testMicrophone()">1. Test Microphone</button>
+    <button onclick="testSpeechRecognition()">2. Test Speech Recognition</button>
+    <button onclick="startListening()">3. Start Listening</button>
+    <div id="result"></div>
+
+    <script>
+        function testMicrophone() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    document.getElementById('result').innerHTML = '<p class="success">✅ Microphone working! Speak into your mic.</p>';
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(err => {
+                    document.getElementById('result').innerHTML = `<p class="error">❌ Microphone error: ${err.message}</p>`;
+                });
+        }
+
+        function testSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                document.getElementById('result').innerHTML = '<p class="success">✅ Speech Recognition is supported in your browser!</p>';
+            } else {
+                document.getElementById('result').innerHTML = '<p class="error">❌ Speech Recognition NOT supported. Please use Chrome, Edge, or Safari.</p>';
+            }
+        }
+
+        function startListening() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                document.getElementById('result').innerHTML = '<p class="error">Speech recognition not supported</p>';
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                document.getElementById('result').innerHTML = '<p>🎤 Listening... Speak now!</p>';
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('result').innerHTML = `<p class="success">✅ You said: "${transcript}"</p>`;
+            };
+
+            recognition.onerror = (event) => {
+                document.getElementById('result').innerHTML = `<p class="error">❌ Error: ${event.error}</p>`;
+            };
+
+            recognition.onend = () => {
+                document.getElementById('result').innerHTML += '<p>👂 Listening ended</p>';
+            };
+
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
