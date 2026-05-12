@@ -1,6 +1,6 @@
 const Message = require('../models/Message');
 const ChatSession = require('../models/ChatSession');
-const geminiService = require('../services/gemini');
+const aiService = require('../services/groq'); // Using Groq service
 
 // Send message and get AI response
 exports.sendMessage = async (req, res) => {
@@ -62,11 +62,11 @@ exports.sendMessage = async (req, res) => {
       }));
     }
 
-    console.log('Sending to Gemini. Messages count:', messagesForAI.length);
+    console.log('Sending to Groq API. Messages count:', messagesForAI.length);
     console.log('🌍 Preferred language:', preferredLanguage || 'Auto');
 
-    // Get AI response from Gemini with language preference
-    const aiResponse = await geminiService.getChatCompletion(messagesForAI, preferredLanguage);
+    // Get AI response from Groq with language preference
+    const aiResponse = await aiService.getChatCompletion(messagesForAI, preferredLanguage);
     console.log('AI response received');
 
     // Save AI message
@@ -77,6 +77,7 @@ exports.sendMessage = async (req, res) => {
       timestamp: new Date(),
       metadata: {
         tokensUsed: aiResponse.tokensUsed || 0,
+        responseTime: aiResponse.responseTime || 0,
       },
     });
     await assistantMessage.save();

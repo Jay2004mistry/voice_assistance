@@ -1,26 +1,16 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const groqService = require('./services/groq');
 require('dotenv').config();
 
-async function testGemini() {
-  console.log('🔍 Testing Gemini API...\n');
+async function testVoice() {
+  console.log('🎤 Testing Groq for Voice Assistant...\n');
   
-  const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    console.error('❌ GOOGLE_API_KEY not found in .env file');
-    return;
-  }
+  const messages = [
+    { role: 'user', content: 'Hello! What is your name?' }
+  ];
   
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-  
-  try {
-    const result = await model.generateContent("Say 'Hello, my voice assistant is working!'");
-    const response = await result.response;
-    console.log('✅ Gemini is working!');
-    console.log('📝 Response:', response.text());
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-  }
+  const response = await groqService.getChatCompletion(messages, 'English');
+  console.log('📝 Response:', response.content);
+  console.log(`⚡ Response time: ${response.responseTime}ms`);
 }
 
-testGemini();
+testVoice();

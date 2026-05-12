@@ -10,10 +10,13 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.16.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
+    "groq-sdk": "^1.2.0",
     "mongoose": "^8.23.1",
+    "natural-compare": "^1.4.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
