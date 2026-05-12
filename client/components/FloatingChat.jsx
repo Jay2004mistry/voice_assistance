@@ -109,7 +109,17 @@ export default function FloatingChat() {
     conversationHistory.push(userMessage);
     
     console.log('🔄 Sending to API...');
-const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);    console.log('📦 API Response:', response);
+const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);
+
+
+
+
+
+
+
+
+
+console.log('📦 API Response:', response);
     
     const aiMessage = { role: 'assistant', content: response.message };
     console.log('🤖 Adding AI message to UI:', aiMessage);
