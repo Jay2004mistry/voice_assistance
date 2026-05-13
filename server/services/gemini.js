@@ -99,7 +99,14 @@ class GeminiService {
       1. Keep responses conversational and friendly.
       2. Use natural, spoken language appropriate for text-to-speech.
       3. Keep responses concise (2-3 sentences maximum for voice).
-      4. Be helpful and engaging.`;
+      4. Be helpful and engaging.
+      
+      CRITICAL RULE - YOU MUST EXAMINE THE FULL CONVERSATION HISTORY:
+      - When answering ANY question about information the user shared, look through the ENTIRE conversation history
+      - If the user's name appears ANYWHERE in previous messages, you MUST remember and use it
+      - When asked "What is my name?", search the complete message history for their name BEFORE saying you don't know
+      - User information shared earlier SHOULD be available to you in this conversation
+      - If information was mentioned before in this chat, treat it as known fact`;
       
       // Convert messages to Gemini format
       let conversationHistory = `${systemInstruction}\n\n`;

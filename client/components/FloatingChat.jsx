@@ -29,6 +29,12 @@ export default function FloatingChat() {
   const isProcessingRef = useRef(false);
   const noSpeechTimeoutRef = useRef(null);
   const lastMessageCountRef = useRef(0);
+  const messagesRef = useRef([]);
+
+  // Always keep messagesRef updated with latest messages state to avoid stale closure in voice/event callbacks
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Update time for status bar
   useEffect(() => {
@@ -102,24 +108,15 @@ export default function FloatingChat() {
   setIsThinking(true);
   
   try {
-    const conversationHistory = messages.map(msg => ({
+    const conversationHistory = messagesRef.current.map(msg => ({
       role: msg.role,
       content: msg.content,
     }));
     conversationHistory.push(userMessage);
     
     console.log('🔄 Sending to API...');
-const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);
-
-
-
-
-
-
-
-
-
-console.log('📦 API Response:', response);
+    const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);
+    console.log('📦 API Response:', response);
     
     const aiMessage = { role: 'assistant', content: response.message };
     console.log('🤖 Adding AI message to UI:', aiMessage);

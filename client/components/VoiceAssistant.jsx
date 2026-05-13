@@ -23,6 +23,11 @@ export default function VoiceAssistant() {
   const messagesEndRef = useRef(null);
   const isProcessingRef = useRef(false);
   const noSpeechTimeoutRef = useRef(null);
+  const messagesRef = useRef([]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // Update time for status bar
   useEffect(() => {
@@ -158,7 +163,7 @@ export default function VoiceAssistant() {
     setIsThinking(true);
     
     try {
-      const conversationHistory = messages.map(msg => ({
+      const conversationHistory = messagesRef.current.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));

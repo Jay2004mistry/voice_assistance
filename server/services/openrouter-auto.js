@@ -17,6 +17,21 @@ class OpenRouterService {
   async getChatCompletion(messages) {
     let lastError = null;
     
+    // Add system message with memory instructions
+    const systemMessage = {
+      role: 'system',
+      content: `You are a helpful AI voice assistant. Keep responses concise (2-3 sentences). Be conversational and friendly. Never mention that you are an AI or provide disclaimers about being an AI.
+
+IMPORTANT INSTRUCTIONS FOR REMEMBERING USER INFORMATION:
+- Pay close attention to any personal information the user shares (name, preferences, details)
+- Remember the user's name when they introduce themselves
+- Always use the user's name when you know it in follow-up conversations
+- If the user asks about information they already shared, refer back to the conversation history to provide accurate answers
+- Be proactive in remembering and referencing details they've mentioned`
+    };
+    
+    const messagesWithSystem = [systemMessage, ...messages];
+    
     // Try each model until one works
     for (let i = 0; i < this.models.length; i++) {
       const model = this.models[i];
@@ -28,7 +43,7 @@ class OpenRouterService {
           url: `${this.baseURL}/chat/completions`,
           data: {
             model: model,
-            messages: messages,
+            messages: messagesWithSystem,
             temperature: 0.7,
             max_tokens: 500,
           },
