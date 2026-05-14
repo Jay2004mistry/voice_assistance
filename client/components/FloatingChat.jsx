@@ -101,7 +101,8 @@ export default function FloatingChat() {
     isProcessingRef.current = true;
 
     // Add user message to UI
-    const userMessage = { role: 'user', content: text };
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMessage = { role: 'user', content: text, timestamp };
     console.log('📝 Adding user message to UI:', userMessage);
     setMessages(prev => [...prev, userMessage]);
 
@@ -122,13 +123,14 @@ export default function FloatingChat() {
         role: msg.role,
         content: msg.content,
       }));
-      conversationHistory.push(userMessage);
+      conversationHistory.push({ role: userMessage.role, content: userMessage.content });
 
       console.log('🔄 Sending to API...');
       const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);
       console.log('📦 API Response:', response);
 
-      const aiMessage = { role: 'assistant', content: response.message };
+      const msgTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const aiMessage = { role: 'assistant', content: response.message, timestamp: msgTimestamp };
       console.log('🤖 Adding AI message to UI:', aiMessage);
       setMessages(prev => [...prev, aiMessage]);
 
@@ -236,10 +238,14 @@ export default function FloatingChat() {
         setIsSessionReady(true); // Mark session as ready
 
         const history = await getChatHistory(storedSessionId, 50);
-        const formattedMessages = history.messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-        }));
+        const formattedMessages = history.messages.map(msg => {
+          const date = msg.timestamp ? new Date(msg.timestamp) : new Date();
+          return {
+            role: msg.role,
+            content: msg.content,
+            timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+        });
         setMessages(formattedMessages);
         lastMessageCountRef.current = formattedMessages.length;
 
@@ -430,7 +436,7 @@ export default function FloatingChat() {
                     <div className={`${message.role === 'user' ? 'message-user' : 'message-ai'} max-w-[85%]`}>
                       <p className="text-xs leading-relaxed break-words">{message.content}</p>
                       <p className="text-[9px] opacity-50 mt-1">
-                        {message.role === 'user' ? 'You' : 'AI'} • just now
+                        {message.role === 'user' ? 'You' : 'AI'} • {message.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
