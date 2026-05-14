@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen;
+    @apply bg-gradient-to-br from-black via-slate-900 to-black min-h-screen;
   }
 }
 
@@ -12,22 +12,34 @@
   /* Floating Chat Button */
   .floating-chat-btn {
     @apply fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full 
-           bg-gradient-to-r from-blue-500 to-purple-500 
+           bg-gradient-to-r from-blue-600 to-blue-400 
            flex items-center justify-center cursor-pointer
-           shadow-2xl transition-all duration-300
-           hover:scale-110 active:scale-95;
+           shadow-2xl transition-all duration-300;
+    animation: btnFloat 3s ease-in-out infinite;
+  }
+  .floating-chat-btn:hover {
+    transform: scale(1.1);
+    animation-play-state: paused;
+  }
+  .floating-chat-btn:active {
+    transform: scale(0.95);
   }
   
-  /* Chat Window */
+  /* Chat Window (Apple Acrylic Effect) */
   .chat-window {
-    @apply fixed z-50 bg-black/80 backdrop-blur-xl
-           rounded-2xl shadow-2xl border border-white/20
-           transition-all duration-300 overflow-hidden;
+    @apply fixed z-50 transition-all duration-300 overflow-hidden rounded-[2.2rem];
     width: 380px;
     height: 600px;
     bottom: 90px;
     right: 24px;
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    
+    /* Apple Dark Acrylic */
+    background: rgba(30, 30, 35, 0.65); 
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
   }
   
   .chat-window.closed {
@@ -48,47 +60,107 @@
   
   /* Phone Frame inside Chat */
   .chat-phone-frame {
-    @apply relative mx-auto bg-black rounded-[2rem] shadow-2xl;
+    @apply relative mx-auto rounded-[2rem];
     width: 100%;
     height: 100%;
   }
   
   .chat-phone-screen {
-    @apply relative w-full h-full overflow-hidden rounded-[1.8rem] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900;
+    @apply relative w-full h-full overflow-hidden rounded-[1.8rem];
+    background: transparent; /* VERY IMPORTANT: Let the chat-window's acrylic show through */
   }
   
   /* Status Bar */
   .status-bar {
-    @apply flex justify-between items-center px-5 pt-2 pb-1.5 text-white text-xs font-medium bg-black/20 backdrop-blur-sm;
+    @apply flex justify-between items-center px-5 pt-3 pb-2 text-white/90 text-xs font-medium;
   }
   
   /* Chat Bubbles */
   .message-user {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl rounded-br-md max-w-[85%] p-2.5 shadow-lg;
+    @apply text-white rounded-2xl rounded-br-md max-w-[85%] p-3 shadow-md;
+    background: #007aff; /* Apple Blue */
   }
   
   .message-ai {
-    @apply bg-white/10 text-white backdrop-blur-sm border border-white/20 rounded-2xl rounded-bl-md max-w-[85%] p-2.5 shadow-lg;
+    @apply text-white rounded-2xl rounded-bl-md max-w-[85%] p-3 shadow-sm;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   /* Home Indicator */
   .home-indicator {
-    @apply absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-white/30 rounded-full;
+    @apply absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white/40 rounded-full;
   }
   
   /* Typing Indicator */
   .typing-indicator {
-    @apply flex gap-1 items-center;
+    @apply flex gap-1.5 items-center;
   }
   
   .typing-dot {
-    @apply w-1.5 h-1.5 bg-purple-400 rounded-full animate-wave;
+    @apply w-1.5 h-1.5 bg-blue-400 rounded-full animate-wave;
   }
   
   /* Unread Badge */
   .unread-badge {
     @apply absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold
-           rounded-full w-5 h-5 flex items-center justify-center;
+           rounded-full w-5 h-5 flex items-center justify-center shadow-md;
+  }
+
+  /* Apple Style Suggestion Cards */
+  .suggestion-card {
+    @apply w-full rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 cursor-pointer relative overflow-hidden;
+    background: rgba(255, 255, 255, 0.08); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  }
+  .suggestion-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transform: scale(1.02);
+  }
+
+  .suggestion-icon-wrapper {
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-white;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  /* Premium Glowing AI Orb */
+  .voice-orb-container {
+    @apply relative w-48 h-48 mx-auto flex items-center justify-center;
+  }
+
+  .voice-orb {
+    @apply absolute w-36 h-36 rounded-full;
+    background: radial-gradient(circle at 30% 30%, #93c5fd, #3b82f6 40%, #1e3a8a 80%); /* Light blue to dark blue */
+    box-shadow: 
+      0 0 60px 15px rgba(59, 130, 246, 0.4),
+      inset 0 0 20px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(147, 197, 253, 0.3);
+    animation: orbFloat 4s ease-in-out infinite;
+  }
+
+  .voice-orb.listening {
+    animation: orbPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background: radial-gradient(circle at 30% 30%, #bfdbfe, #2563eb 40%, #1e40af 80%);
+    box-shadow: 
+      0 0 80px 25px rgba(37, 99, 235, 0.5), 
+      inset 0 0 30px rgba(255, 255, 255, 0.6);
+  }
+
+  .voice-orb-eyes {
+    @apply absolute inset-0 flex justify-center gap-3 items-center pointer-events-none z-10;
+  }
+
+  .voice-orb-eye {
+    @apply w-2 h-6 rounded-full;
+    background: #fff;
+    box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
   }
 }
 
@@ -103,9 +175,24 @@
     100% { transform: scale(1.4); opacity: 0; }
   }
   
+  @keyframes btnFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes orbFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-10px) scale(1.02); }
+  }
+
+  @keyframes orbPulse {
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.1); filter: brightness(1.2); }
   }
   
   @keyframes slideUp {

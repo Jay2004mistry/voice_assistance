@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import SpeechToTextService from '@/lib/speechToText';
 import TextToSpeechService from '@/lib/textToSpeech';
 import { createSession, sendMessage, getChatHistory, clearChatHistory } from '@/lib/api';
+import Image from 'next/image';
 
 export default function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -355,18 +356,22 @@ export default function FloatingChat() {
   return (
     <>
       {/* Floating Chat Button */}
-      <div className="floating-chat-btn" onClick={toggleChat}>
+      <div className="floating-chat-btn overflow-hidden" onClick={toggleChat}>
         {isOpen ? (
           <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
           <>
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <circle cx="12" cy="5" r="2" />
+              <path d="M12 7v4" />
+              <line x1="8" y1="16" x2="8.01" y2="16" strokeWidth={3} strokeLinecap="round" />
+              <line x1="16" y1="16" x2="16.01" y2="16" strokeWidth={3} strokeLinecap="round" />
             </svg>
             {unreadCount > 0 && (
-              <span className="unread-badge animate-bounce">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              <span className="unread-badge animate-bounce z-20">{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
           </>
         )}
@@ -375,7 +380,7 @@ export default function FloatingChat() {
       {/* Chat Window */}
       <div className={`chat-window ${!isOpen ? 'closed' : ''}`}>
         <div className="chat-phone-frame">
-          <div className="chat-phone-screen flex flex-col">
+          <div className="chat-phone-screen flex flex-col relative">
             {/* Status Bar */}
             <div className="status-bar">
               <span className="font-semibold">{currentTime}</span>
@@ -461,22 +466,28 @@ export default function FloatingChat() {
               <div className="flex gap-1.5 mb-2">
                 <button
                   onClick={() => setInputMode('text')}
-                  className={`flex-1 py-1 rounded-full text-[10px] font-medium transition-all ${inputMode === 'text'
+                  className={`flex-1 py-1 flex items-center justify-center gap-1 rounded-full text-[10px] font-medium transition-all ${inputMode === 'text'
                     ? 'bg-blue-500 text-white'
-                    : 'bg-white/10 text-gray-400'
+                    : 'bg-white/10 text-gray-400 hover:bg-white/20'
                     }`}
                 >
-                  ✏️ Type
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Type
                 </button>
                 <button
                   onClick={() => setInputMode('voice')}
                   disabled={!isMicReady || !isSessionReady}
-                  className={`flex-1 py-1 rounded-full text-[10px] font-medium transition-all ${inputMode === 'voice' && isMicReady && isSessionReady
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-white/10 text-gray-400'
+                  className={`flex-1 py-1 flex items-center justify-center gap-1 rounded-full text-[10px] font-medium transition-all ${inputMode === 'voice' && isMicReady && isSessionReady
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/10 text-gray-400 hover:bg-white/20'
                     } ${(!isMicReady || !isSessionReady) ? 'opacity-50' : ''}`}
                 >
-                  🎤 Speak
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                  Speak
                 </button>
               </div>
               
