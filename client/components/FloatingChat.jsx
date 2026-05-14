@@ -21,8 +21,9 @@ export default function FloatingChat() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isSessionReady, setIsSessionReady] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('🌍 Auto');
-  
+  const [currentLanguage, setCurrentLanguage] = useState('Auto');
+  const [isMuted, setIsMuted] = useState(false);
+
   const speechToTextRef = useRef(null);
   const textToSpeechRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -35,6 +36,14 @@ export default function FloatingChat() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const isMutedRef = useRef(false);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (isMuted && textToSpeechRef.current) {
+      textToSpeechRef.current.stop();
+    }
+  }, [isMuted]);
 
   // Update time for status bar
   useEffect(() => {
@@ -68,85 +77,84 @@ export default function FloatingChat() {
   }, [messages, isOpen]);
 
   // ========== HANDLE USER INPUT ==========
- const handleUserInput = async (text) => {
-  console.log('🔵 handleUserInput called with:', text);
-  
-  if (isProcessingRef.current) {
-    console.log('⏸️ Already processing, skipping');
-    return;
-  }
-  
-  if (!sessionId) {
-    console.log('❌ No sessionId - waiting for session...');
-    setError('Session initializing, please wait...');
-    setTimeout(() => setError(null), 2000);
-    return;
-  }
-  
-  if (!text || text.trim() === '') {
-    console.log('❌ Empty text');
-    return;
-  }
-  
-  isProcessingRef.current = true;
-  
-  // Add user message to UI
-  const userMessage = { role: 'user', content: text };
-  console.log('📝 Adding user message to UI:', userMessage);
-  setMessages(prev => [...prev, userMessage]);
-  
-  // Stop listening if active
-  if (speechToTextRef.current && isListening) {
-    speechToTextRef.current.stopListening();
-  }
-  
-  // Stop any ongoing speech
-  if (textToSpeechRef.current && isSpeaking) {
-    textToSpeechRef.current.stop();
-  }
-  
-  setIsThinking(true);
-  
-  try {
-    const conversationHistory = messagesRef.current.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-    conversationHistory.push(userMessage);
-    
-    console.log('🔄 Sending to API...');
-    const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);
-    console.log('📦 API Response:', response);
-    
-    const aiMessage = { role: 'assistant', content: response.message };
-    console.log('🤖 Adding AI message to UI:', aiMessage);
-    setMessages(prev => [...prev, aiMessage]);
-    
-    // FIXED: Remove isOpen condition - always speak if chat is open OR if voice mode is active
-    // Also check if response.message exists and is not empty
-    if (textToSpeechRef.current && response.message && response.message.trim() !== '') {
-      console.log('🔊 Speaking response:', response.message.substring(0, 100));
-      // Small delay to ensure UI updates first
-      setTimeout(() => {
-        textToSpeechRef.current.speak(response.message);
-      }, 100);
-    } else {
-      console.log('⚠️ Cannot speak - textToSpeechRef:', !!textToSpeechRef.current, 'message:', !!response.message);
+  const handleUserInput = async (text) => {
+    console.log('🔵 handleUserInput called with:', text);
+
+    if (isProcessingRef.current) {
+      console.log('⏸️ Already processing, skipping');
+      return;
     }
-    
-    setTextInput('');
-    
-  } catch (error) {
-    console.error('❌ Error:', error);
-    setError('Failed to get response');
-    setTimeout(() => setError(null), 2000);
-    // Remove the failed user message
-    setMessages(prev => prev.slice(0, -1));
-  } finally {
-    setIsThinking(false);
-    isProcessingRef.current = false;
-  }
-};
+
+    if (!sessionId) {
+      console.log('❌ No sessionId - waiting for session...');
+      setError('Session initializing, please wait...');
+      setTimeout(() => setError(null), 2000);
+      return;
+    }
+
+    if (!text || text.trim() === '') {
+      console.log('❌ Empty text');
+      return;
+    }
+
+    isProcessingRef.current = true;
+
+    // Add user message to UI
+    const userMessage = { role: 'user', content: text };
+    console.log('📝 Adding user message to UI:', userMessage);
+    setMessages(prev => [...prev, userMessage]);
+
+    // Stop listening if active
+    if (speechToTextRef.current && isListening) {
+      speechToTextRef.current.stopListening();
+    }
+
+    // Stop any ongoing speech
+    if (textToSpeechRef.current && isSpeaking) {
+      textToSpeechRef.current.stop();
+    }
+
+    setIsThinking(true);
+
+    try {
+      const conversationHistory = messagesRef.current.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+      conversationHistory.push(userMessage);
+
+      console.log('🔄 Sending to API...');
+      const response = await sendMessage(sessionId, text, conversationHistory, currentLanguage);
+      console.log('📦 API Response:', response);
+
+      const aiMessage = { role: 'assistant', content: response.message };
+      console.log('🤖 Adding AI message to UI:', aiMessage);
+      setMessages(prev => [...prev, aiMessage]);
+
+      // Speak if not muted and we have a valid message
+      if (!isMutedRef.current && textToSpeechRef.current && response.message && response.message.trim() !== '') {
+        console.log('🔊 Speaking response:', response.message.substring(0, 100));
+        // Small delay to ensure UI updates first
+        setTimeout(() => {
+          textToSpeechRef.current.speak(response.message);
+        }, 100);
+      } else {
+        console.log('⚠️ Cannot speak - muted:', isMutedRef.current, 'textToSpeechRef:', !!textToSpeechRef.current, 'message:', !!response.message);
+      }
+
+      setTextInput('');
+
+    } catch (error) {
+      console.error('❌ Error:', error);
+      setError('Failed to get response');
+      setTimeout(() => setError(null), 2000);
+      // Remove the failed user message
+      setMessages(prev => prev.slice(0, -1));
+    } finally {
+      setIsThinking(false);
+      isProcessingRef.current = false;
+    }
+  };
 
   const handleTextSubmit = (e) => {
     e.preventDefault();
@@ -157,19 +165,19 @@ export default function FloatingChat() {
 
   const toggleListening = () => {
     console.log('🎤 Toggle listening - isListening:', isListening, 'isMicReady:', isMicReady, 'isSessionReady:', isSessionReady);
-    
+
     if (!isSessionReady) {
       setError('Session initializing, please wait...');
       setTimeout(() => setError(null), 1500);
       return;
     }
-    
+
     if (!isMicReady) {
       setError('Mic not available');
       setTimeout(() => setError(null), 1500);
       return;
     }
-    
+
     if (isListening) {
       console.log('Stopping listening...');
       speechToTextRef.current?.stopListening();
@@ -179,12 +187,12 @@ export default function FloatingChat() {
       speechToTextRef.current?.startListening();
       setIsListening(true);
       setInputMode('voice');
-      
+
       // Clear existing timeout
       if (noSpeechTimeoutRef.current) {
         clearTimeout(noSpeechTimeoutRef.current);
       }
-      
+
       noSpeechTimeoutRef.current = setTimeout(() => {
         if (isListening) {
           console.log('Auto-stop timeout');
@@ -216,16 +224,16 @@ export default function FloatingChat() {
     const initSession = async () => {
       try {
         let storedSessionId = localStorage.getItem('floatingChatSessionId');
-        
+
         if (!storedSessionId) {
           const session = await createSession();
           storedSessionId = session.sessionId;
           localStorage.setItem('floatingChatSessionId', storedSessionId);
         }
-        
+
         setSessionId(storedSessionId);
         setIsSessionReady(true); // Mark session as ready
-        
+
         const history = await getChatHistory(storedSessionId, 50);
         const formattedMessages = history.messages.map(msg => ({
           role: msg.role,
@@ -233,14 +241,14 @@ export default function FloatingChat() {
         }));
         setMessages(formattedMessages);
         lastMessageCountRef.current = formattedMessages.length;
-        
+
       } catch (error) {
         console.error('Failed to initialize session:', error);
         setError('Cannot connect to server');
         setTimeout(() => setError(null), 3000);
       }
     };
-    
+
     initSession();
   }, []);
 
@@ -250,24 +258,24 @@ export default function FloatingChat() {
       console.log('⏳ Waiting for session to be ready before initializing speech...');
       return;
     }
-    
+
     console.log('🎤 Session ready! Initializing speech services...');
-    
+
     const speechToText = new SpeechToTextService();
     const textToSpeech = new TextToSpeechService();
-    
+
     speechToTextRef.current = speechToText;
     textToSpeechRef.current = textToSpeech;
-    
+
     // Set up speech recognition callbacks
     speechToText.onResult = (transcript) => {
       console.log('🎯🎯🎯 SPEECH RECOGNITION RESULT:', transcript);
-      
+
       if (noSpeechTimeoutRef.current) {
         clearTimeout(noSpeechTimeoutRef.current);
         noSpeechTimeoutRef.current = null;
       }
-      
+
       if (transcript && transcript.trim() !== '') {
         console.log('✅ Calling handleUserInput with:', transcript);
         handleUserInput(transcript);
@@ -276,7 +284,7 @@ export default function FloatingChat() {
       }
       setIsListening(false);
     };
-    
+
     speechToText.onError = (errorMsg) => {
       console.log('❌ Speech error:', errorMsg);
       if (errorMsg === 'no-speech') {
@@ -293,27 +301,27 @@ export default function FloatingChat() {
       }
       setIsListening(false);
     };
-    
+
     speechToText.onEnd = () => {
       console.log('Speech recognition ended');
       setIsListening(false);
     };
-    
+
     textToSpeech.onStart = () => {
       console.log('🔊 Started speaking');
       setIsSpeaking(true);
     };
-    
+
     textToSpeech.onEnd = () => {
       console.log('🔊 Finished speaking');
       setIsSpeaking(false);
     };
-    
+
     textToSpeech.onError = (errorMsg) => {
       console.error('Speech synthesis error:', errorMsg);
       setIsSpeaking(false);
     };
-    
+
     // Check microphone permission
     const checkMicrophone = async () => {
       try {
@@ -333,7 +341,7 @@ export default function FloatingChat() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       checkMicrophone();
     }
-    
+
     return () => {
       if (speechToTextRef.current) {
         speechToTextRef.current.stopListening();
@@ -377,23 +385,28 @@ export default function FloatingChat() {
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
               </div>
             </div>
-            
+
             {/* Header */}
             <div className="text-center py-2 border-b border-white/10 flex justify-between items-center px-4">
-              <div className="w-8"></div>
+              <div className="w-12"></div>
               <div>
                 <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  AI Assistant
+                  Vihil Infotech
                 </h1>
-               <p className="text-[10px] text-gray-400 mt-0.5">
-  {!isSessionReady ? '⏳ Initializing...' : isListening ? '🎤 Listening...' : isSpeaking ? `🔊 Speaking (${currentLanguage})` : `🌍 ${currentLanguage}`}
-</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {!isSessionReady ? '⏳ Initializing...' : isListening ? '🎤 Listening...' : isSpeaking ? `🔊 Speaking (${currentLanguage})` : `🌍 ${currentLanguage}`}
+                </p>
               </div>
-              <button onClick={clearChat} className="text-gray-400 hover:text-white text-sm">
-                🗑️
-              </button>
+              <div className="flex gap-3 w-12 justify-end items-center">
+                <button onClick={() => setIsMuted(!isMuted)} className={`text-sm transition-colors ${isMuted ? 'text-red-400' : 'text-gray-400 hover:text-white'}`} title={isMuted ? "Unmute" : "Mute"}>
+                  {isMuted ? '🔇' : '🔊'}
+                </button>
+                <button onClick={clearChat} className="text-gray-400 hover:text-white text-sm" title="Clear Chat">
+                  🗑️
+                </button>
+              </div>
             </div>
-            
+
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-3 space-y-1.5 scrollbar-thin">
               {messages.length === 0 ? (
@@ -418,7 +431,7 @@ export default function FloatingChat() {
                   </div>
                 ))
               )}
-              
+
               {isThinking && (
                 <div className="flex justify-start animate-fade-in">
                   <div className="message-ai max-w-[85%]">
@@ -431,96 +444,58 @@ export default function FloatingChat() {
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
-            
+
             {/* Error Toast */}
             {error && (
               <div className="mx-3 mb-1.5 p-1.5 bg-red-500/80 backdrop-blur-sm rounded-xl text-white text-[10px] text-center animate-fade-in">
                 {error}
               </div>
             )}
-            
+
             {/* Input Area */}
             <div className="p-2.5 border-t border-white/10 bg-black/20 backdrop-blur-sm">
               {/* Mode Toggle Buttons */}
               <div className="flex gap-1.5 mb-2">
                 <button
                   onClick={() => setInputMode('text')}
-                  className={`flex-1 py-1 rounded-full text-[10px] font-medium transition-all ${
-                    inputMode === 'text' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-white/10 text-gray-400'
-                  }`}
+                  className={`flex-1 py-1 rounded-full text-[10px] font-medium transition-all ${inputMode === 'text'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/10 text-gray-400'
+                    }`}
                 >
                   ✏️ Type
                 </button>
                 <button
                   onClick={() => setInputMode('voice')}
                   disabled={!isMicReady || !isSessionReady}
-                  className={`flex-1 py-1 rounded-full text-[10px] font-medium transition-all ${
-                    inputMode === 'voice' && isMicReady && isSessionReady
-                      ? 'bg-purple-500 text-white' 
-                      : 'bg-white/10 text-gray-400'
-                  } ${(!isMicReady || !isSessionReady) ? 'opacity-50' : ''}`}
+                  className={`flex-1 py-1 rounded-full text-[10px] font-medium transition-all ${inputMode === 'voice' && isMicReady && isSessionReady
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-white/10 text-gray-400'
+                    } ${(!isMicReady || !isSessionReady) ? 'opacity-50' : ''}`}
                 >
                   🎤 Speak
                 </button>
               </div>
-              {/* Language Selector - Add this after Mode Toggle Buttons */}
-<div className="flex gap-1 mb-2 justify-center">
-  <button
-    onClick={() => setCurrentLanguage('Auto')}
-    className={`px-2 py-0.5 rounded-full text-[8px] transition-all ${
-      currentLanguage === 'Auto' 
-        ? 'bg-green-500 text-white' 
-        : 'bg-white/10 text-gray-400 hover:bg-white/20'
-    }`}
-  >
-    🌍 Auto
-  </button>
-  <button
-    onClick={() => setCurrentLanguage('English')}
-    className={`px-2 py-0.5 rounded-full text-[8px] transition-all ${
-      currentLanguage === 'English' 
-        ? 'bg-blue-500 text-white' 
-        : 'bg-white/10 text-gray-400 hover:bg-white/20'
-    }`}
-  >
-    🇬🇧 EN
-  </button>
-  <button
-    onClick={() => setCurrentLanguage('Hindi')}
-    className={`px-2 py-0.5 rounded-full text-[8px] transition-all ${
-      currentLanguage === 'Hindi' 
-        ? 'bg-orange-500 text-white' 
-        : 'bg-white/10 text-gray-400 hover:bg-white/20'
-    }`}
-  >
-    🇮🇳 हिंदी
-  </button>
-  <button
-    onClick={() => setCurrentLanguage('Gujarati')}
-    className={`px-2 py-0.5 rounded-full text-[8px] transition-all ${
-      currentLanguage === 'Gujarati' 
-        ? 'bg-purple-500 text-white' 
-        : 'bg-white/10 text-gray-400 hover:bg-white/20'
-    }`}
-  >
-    🇮🇳 ગુજરાતી
-  </button>
-  <button
-    onClick={() => setCurrentLanguage('Spanish')}
-    className={`px-2 py-0.5 rounded-full text-[8px] transition-all ${
-      currentLanguage === 'Spanish' 
-        ? 'bg-red-500 text-white' 
-        : 'bg-white/10 text-gray-400 hover:bg-white/20'
-    }`}
-  >
-    🇪🇸 ES
-  </button>
-</div>
+              
+              {/* Language Selector */}
+              <div className="mb-2 flex justify-end">
+                <select
+                  value={currentLanguage}
+                  onChange={(e) => setCurrentLanguage(e.target.value)}
+                  className="bg-black/40 text-white text-[10px] rounded-lg px-2 py-1 outline-none border border-white/10 hover:border-white/20 transition-colors focus:border-purple-500/50 cursor-pointer"
+                >
+                  <option value="Auto">🌍 Auto-Detect</option>
+                  <option value="English">🇬🇧 English</option>
+                  <option value="Hindi">🇮🇳 Hindi</option>
+                  <option value="Gujarati">🇮🇳 Gujarati</option>
+                  <option value="Spanish">🇪🇸 Spanish</option>
+                  <option value="French">🇫🇷 French</option>
+                  <option value="German">🇩🇪 German</option>
+                </select>
+              </div>
               {/* Text Input */}
               {inputMode === 'text' && (
                 <form onSubmit={handleTextSubmit} className="flex gap-1.5">
@@ -543,29 +518,31 @@ export default function FloatingChat() {
                   </button>
                 </form>
               )}
-              
+
               {/* Voice Input */}
               {inputMode === 'voice' && (
                 <div className="flex justify-center py-1.5">
                   <button
                     onClick={toggleListening}
                     disabled={!isMicReady || !isSessionReady}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl ${
-                      isListening ? 'bg-red-500 animate-pulse' : 'bg-gradient-to-r from-blue-500 to-purple-500'
-                    } ${(!isMicReady || !isSessionReady) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl ${isListening ? 'bg-red-500 animate-pulse' : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                      } ${(!isMicReady || !isSessionReady) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {isListening ? (
-                        <rect x="6" y="4" width="12" height="16" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m-3 0h6m-6-7a3 3 0 01-3-3V5a3 3 0 116 0v10a3 3 0 01-3 3z" />
-                      )}
-                    </svg>
+                    {isListening ? (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path fillRule="evenodd" d="M4.5 7.5a3 3 0 013-3h9a3 3 0 013 3v9a3 3 0 01-3 3h-9a3 3 0 01-3-3v-9z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+                        <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.751 6.751 0 01-6 6.709v2.291h3a.75.75 0 010 1.5h-7.5a.75.75 0 010-1.5h3v-2.291a6.751 6.751 0 01-6-6.709v-1.5A.75.75 0 016 10.5z" />
+                      </svg>
+                    )}
                   </button>
                 </div>
               )}
             </div>
-            
+
             {/* Home Indicator */}
             <div className="home-indicator"></div>
           </div>
