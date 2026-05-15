@@ -67,7 +67,7 @@ exports.sendMessage = async (req, res) => {
 
     // Get AI response from Groq with language preference
     const aiResponse = await aiService.getChatCompletion(messagesForAI, preferredLanguage);
-    console.log('AI response received');
+    console.log(`🤖 AI response received from ${aiResponse.model} in ${aiResponse.responseTime}ms`);
 
     // Save AI message
     const assistantMessage = new Message({

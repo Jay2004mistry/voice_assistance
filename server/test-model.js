@@ -1,5 +1,5 @@
-const groqService = require('./services/groq');
 require('dotenv').config();
+const groqService = require('./services/groq');
 
 async function testVoice() {
   console.log('🎤 Testing Groq for Voice Assistant...\n');

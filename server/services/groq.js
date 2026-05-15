@@ -10,8 +10,8 @@ class GroqService {
       apiKey: process.env.GROQ_API_KEY,
       timeout: 30000, // 30 seconds timeout
     });
-    this.model = 'llama-3.1-8b-instant';
-    this.maxRetries = 2;
+    this.model = 'llama-3.3-70b-versatile';
+    this.defaultMaxRetries = 2;
   }
 
   /**
@@ -20,7 +20,7 @@ class GroqService {
    * @param {String} preferredLanguage - Preferred response language
    * @returns {Object} Response with content and metadata
    */
-  async getChatCompletion(messages, preferredLanguage = null) {
+  async getChatCompletion(messages, preferredLanguage = null, reqRetries = null) {
     try {
       if (!Array.isArray(messages) || messages.length === 0) {
         throw new Error('Invalid messages format');
@@ -47,18 +47,31 @@ class GroqService {
       
       const systemMessage = {
         role: 'system',
-        content: `You are a helpful AI voice assistant named "Vihil AI". ${languageInstruction} Keep responses concise (2-3 sentences). Be conversational and friendly. Never mention that you are an AI or provide disclaimers about being an AI.`
+        content: `You are "Vihil AI", a premium, helpful, and highly intelligent voice assistant developed by Vihil Infotech.
+${languageInstruction}
+Key Instructions:
+- Keep responses conversational, friendly, and concise (max 2-3 sentences).
+- Use proper script for the language (e.g., Hindi in Devanagari, Gujarati in Gujarati script).
+- Be helpful and direct. 
+- Never mention that you are an AI or provide standard AI disclaimers.
+- Act as a real assistant would.
+- Do not explain how you work or what models you use unless specifically asked.
+- If the user greets you, greet them back warmly as "Vihil AI".`
       };
       
       const messagesWithSystem = [systemMessage, ...messages];
       
+      const startTime = Date.now();
+      
       const response = await this.client.chat.completions.create({
         model: this.model,
         messages: messagesWithSystem,
-        temperature: 0.7,
-        max_completion_tokens: 300,
+        temperature: 0.6, // Slightly lower for better consistency
+        max_completion_tokens: 500, // Increased for better accuracy
         top_p: 0.9,
       });
+
+      const responseTime = Date.now() - startTime;
 
       if (!response.choices || !response.choices[0] || !response.choices[0].message) {
         throw new Error('Invalid response from Groq API');
@@ -68,18 +81,19 @@ class GroqService {
         content: response.choices[0].message.content,
         tokensUsed: response.usage?.total_tokens || 0,
         model: this.model,
+        responseTime: responseTime,
         timestamp: new Date(),
       };
       
     } catch (error) {
       console.error('❌ Groq Error:', error.message);
       
-      // Retry logic for specific errors
-      if (error.status === 429 && this.maxRetries > 0) { // Rate limited
-        this.maxRetries--;
-        console.log('Rate limited, retrying in 2 seconds...');
+      // Retry logic for rate limiting
+      const currentRetries = reqRetries || this.defaultMaxRetries;
+      if (error.status === 429 && currentRetries > 0) {
+        console.log(`Rate limited, retrying (${currentRetries} left) in 2 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 2000));
-        return this.getChatCompletion(messages, preferredLanguage);
+        return this.getChatCompletion(messages, preferredLanguage, currentRetries - 1);
       }
       
       // Return graceful fallback response

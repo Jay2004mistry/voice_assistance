@@ -11,7 +11,7 @@ class SpeechToTextService {
     this.explicitlyStopped = false;
     this.currentInterimTranscript = '';
     this.silenceTimeout = null;
-    this.silenceDelay = 1500;
+    this.silenceDelay = 2000;
 
     this.init();
   }
@@ -71,7 +71,9 @@ class SpeechToTextService {
           if (!this.explicitlyStopped && this.isListening) {
             console.log('🔄 Auto-restarting...');
             try {
-              this.recognition.start();
+              if (this.recognition && this.isListening) {
+                this.recognition.start();
+              }
               return;
             } catch (error) {
               console.error('Failed to auto-restart:', error);

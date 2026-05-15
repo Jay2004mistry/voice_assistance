@@ -9,6 +9,9 @@ class TextToSpeechService {
     this.englishVoice = null;
     this.gujaratiVoice = null;
     this.hindiVoice = null;
+    this.spanishVoice = null;
+    this.frenchVoice = null;
+    this.germanVoice = null;
 
     this.init();
   }
@@ -61,13 +64,15 @@ class TextToSpeechService {
       }
     }
 
-    // Try to find Gujarati voice
-    const gujaratiVoice = voices.find(v => v.lang === 'gu-IN' || v.lang === 'gu' || v.lang.startsWith('gu'));
-    if (gujaratiVoice) {
-      this.gujaratiVoice = gujaratiVoice;
-      console.log(`✅ Gujarati voice found: ${gujaratiVoice.name}`);
+    // Try to find Gujarati voice - prioritize Google or Natural voices
+    const guVoices = voices.filter(v => v.lang.startsWith('gu'));
+    const bestGu = guVoices.find(v => v.name.includes('Google') || v.name.includes('Natural')) || guVoices[0];
+    
+    if (bestGu) {
+      this.gujaratiVoice = bestGu;
+      console.log(`✅ Gujarati voice found: ${bestGu.name}`);
     } else {
-      console.log('⚠️ No native Gujarati voice found - will use English voice with Gujarati language setting');
+      console.log('⚠️ No native Gujarati voice found - will use English fallback');
     }
 
     // Try to find Hindi voice
@@ -75,6 +80,27 @@ class TextToSpeechService {
     if (hindiVoice) {
       this.hindiVoice = hindiVoice;
       console.log(`✅ Hindi voice found: ${hindiVoice.name}`);
+    }
+
+    // Try to find Spanish voice
+    const spanishVoice = voices.find(v => v.lang.startsWith('es'));
+    if (spanishVoice) {
+      this.spanishVoice = spanishVoice;
+      console.log(`✅ Spanish voice found: ${spanishVoice.name}`);
+    }
+
+    // Try to find French voice
+    const frenchVoice = voices.find(v => v.lang.startsWith('fr'));
+    if (frenchVoice) {
+      this.frenchVoice = frenchVoice;
+      console.log(`✅ French voice found: ${frenchVoice.name}`);
+    }
+
+    // Try to find German voice
+    const germanVoice = voices.find(v => v.lang.startsWith('de'));
+    if (germanVoice) {
+      this.germanVoice = germanVoice;
+      console.log(`✅ German voice found: ${germanVoice.name}`);
     }
   }
 
@@ -100,6 +126,15 @@ class TextToSpeechService {
     }
     if (languageCode === 'hi-IN' || detectedLang === 'hi') {
       return this.hindiVoice || this.englishVoice;
+    }
+    if (languageCode === 'es-ES' || detectedLang === 'es') {
+      return this.spanishVoice || this.englishVoice;
+    }
+    if (languageCode === 'fr-FR' || detectedLang === 'fr') {
+      return this.frenchVoice || this.englishVoice;
+    }
+    if (languageCode === 'de-DE' || detectedLang === 'de') {
+      return this.germanVoice || this.englishVoice;
     }
     return this.englishVoice;
   }
@@ -155,9 +190,10 @@ class TextToSpeechService {
         utterance.lang = targetLangCode;
 
         // Adjust rate and pitch based on language
+        // Adjust rate and pitch for native Gujarati clarity
         if (targetLangCode === 'gu-IN') {
-          utterance.rate = 0.85;  // Slightly slower for Gujarati clarity
-          utterance.pitch = 1.1;
+          utterance.rate = 0.8;  // Slightly slower for better phonetics
+          utterance.pitch = 1.0; // More natural pitch
         } else if (targetLangCode === 'hi-IN') {
           utterance.rate = 0.9;
           utterance.pitch = 1.1;

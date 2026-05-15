@@ -139,7 +139,9 @@ export default function FloatingChat() {
         console.log('🔊 Speaking response:', response.message.substring(0, 100));
         // Small delay to ensure UI updates first
         setTimeout(() => {
-          textToSpeechRef.current.speak(response.message);
+          if (!isMutedRef.current) {
+            textToSpeechRef.current.speak(response.message, currentLanguage);
+          }
         }, 100);
       } else {
         console.log('⚠️ Cannot speak - muted:', isMutedRef.current, 'textToSpeechRef:', !!textToSpeechRef.current, 'message:', !!response.message);
@@ -191,9 +193,9 @@ export default function FloatingChat() {
       setIsListening(true);
       setInputMode('voice');
 
-      // Clear existing timeout
-      if (noSpeechTimeoutRef.current) {
-        clearTimeout(noSpeechTimeoutRef.current);
+      // INTERRUPT: Stop any ongoing speech when user wants to talk
+      if (textToSpeechRef.current) {
+        textToSpeechRef.current.stop();
       }
 
       noSpeechTimeoutRef.current = setTimeout(() => {
@@ -219,6 +221,15 @@ export default function FloatingChat() {
     setIsOpen(!isOpen);
     if (!isOpen) {
       setUnreadCount(0);
+      // Small greeting when opening for the first time if no messages
+      if (messages.length === 0 && textToSpeechRef.current && !isMutedRef.current) {
+        setTimeout(() => {
+          const greeting = currentLanguage === 'Gujarati' ? 'નમસ્તે, હું તમારી કેવી રીતે મદદ કરી શકું?' : 
+                           currentLanguage === 'Hindi' ? 'नमस्ते, मैं आपकी क्या मदद कर सकता हूँ?' : 
+                           'Hello, how can I help you today?';
+          textToSpeechRef.current.speak(greeting, currentLanguage);
+        }, 500);
+      }
     }
   };
 
@@ -259,6 +270,22 @@ export default function FloatingChat() {
     initSession();
   }, []);
 
+  // Proactive greeting when language changes
+  useEffect(() => {
+    if (isSessionReady && isOpen && textToSpeechRef.current && !isMutedRef.current && messages.length > 0) {
+      const greetings = {
+        'Gujarati': 'હવે હું ગુજરાતીમાં વાત કરીશ.',
+        'Hindi': 'अब मैं हिंदी में बात करूँगा।',
+        'Spanish': 'Ahora hablaré en español.',
+        'French': 'Maintenant, je vais parler en français.',
+        'German': 'Jetzt werde ich auf Deutsch sprechen.',
+        'English': 'I will speak in English now.'
+      };
+      const text = greetings[currentLanguage] || `Switching to ${currentLanguage}`;
+      textToSpeechRef.current.speak(text, currentLanguage);
+    }
+  }, [currentLanguage]);
+
   // Initialize speech services - ONLY AFTER session is ready
   useEffect(() => {
     if (!isSessionReady) {
@@ -288,8 +315,8 @@ export default function FloatingChat() {
         handleUserInput(transcript);
       } else {
         console.log('⚠️ Empty transcript, ignoring');
+        setIsListening(false);
       }
-      setIsListening(false);
     };
 
     speechToText.onError = (errorMsg) => {
@@ -445,12 +472,12 @@ export default function FloatingChat() {
 
               {isThinking && (
                 <div className="flex justify-start animate-fade-in">
-                  <div className="message-ai max-w-[85%]">
-                    <div className="typing-indicator">
-                      <div className="typing-dot" style={{ animationDelay: '0s' }}></div>
-                      <div className="typing-dot" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="typing-dot" style={{ animationDelay: '0.4s' }}></div>
-                      <span className="text-[10px] text-gray-400 ml-1.5">AI is thinking</span>
+                  <div className="message-ai max-w-[85%] bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-3">
+                    <div className="typing-indicator flex items-center gap-1.5">
+                      <div className="typing-dot bg-blue-400 w-1.5 h-1.5 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                      <div className="typing-dot bg-purple-400 w-1.5 h-1.5 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="typing-dot bg-pink-400 w-1.5 h-1.5 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      <span className="text-[10px] text-gray-300 ml-1 font-medium animate-pulse">Vihil AI is thinking...</span>
                     </div>
                   </div>
                 </div>
