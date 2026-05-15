@@ -187,7 +187,7 @@ export default function FloatingChat() {
       setIsListening(false);
     } else {
       console.log('Starting listening...');
-      speechToTextRef.current?.startListening();
+      speechToTextRef.current?.startListening(currentLanguage);
       setIsListening(true);
       setInputMode('voice');
 

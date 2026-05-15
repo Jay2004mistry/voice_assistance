@@ -6,8 +6,10 @@ class TextToSpeechService {
     this.onStart = null;
     this.onEnd = null;
     this.onError = null;
-    this.consistentVoice = null;
-    
+    this.englishVoice = null;
+    this.gujaratiVoice = null;
+    this.hindiVoice = null;
+
     this.init();
   }
 
@@ -26,76 +28,114 @@ class TextToSpeechService {
   loadVoices() {
     const voices = this.synthesis.getVoices();
     console.log('🎤 Available voices:', voices.length);
-    
-    // Find a consistent English female voice to use for ALL languages
+
+    // Log all voices for debugging
+    voices.forEach(voice => {
+      console.log(`  - ${voice.name} (${voice.lang})`);
+    });
+
+    // Find English female voice
     const preferredVoices = [
       'Google UK English Female',
       'Google US English Female',
       'Microsoft Zira',
       'Samantha',
       'Victoria',
-      'Karen',
     ];
 
-    // Try to find a preferred female voice
     for (const prefName of preferredVoices) {
       const voice = voices.find(v => v.name.includes(prefName));
       if (voice) {
-        this.consistentVoice = voice;
-        console.log(`✅ Using consistent voice for ALL languages: ${voice.name}`);
-        return;
+        this.englishVoice = voice;
+        console.log(`✅ English voice found: ${voice.name}`);
+        break;
       }
     }
 
-    // Fallback: any English voice
-    const englishVoice = voices.find(v => v.lang.startsWith('en'));
-    if (englishVoice) {
-      this.consistentVoice = englishVoice;
-      console.log(`✅ Using fallback English voice for ALL languages: ${englishVoice.name}`);
-      return;
+    // Fallback English voice
+    if (!this.englishVoice) {
+      const englishVoice = voices.find(v => v.lang.startsWith('en'));
+      if (englishVoice) {
+        this.englishVoice = englishVoice;
+        console.log(`✅ Using fallback English voice: ${englishVoice.name}`);
+      }
     }
 
-    // Last resort: any voice
-    if (voices.length > 0) {
-      this.consistentVoice = voices[0];
-      console.log(`⚠️ Using default voice for ALL languages: ${voices[0].name}`);
+    // Try to find Gujarati voice
+    const gujaratiVoice = voices.find(v => v.lang === 'gu-IN' || v.lang === 'gu' || v.lang.startsWith('gu'));
+    if (gujaratiVoice) {
+      this.gujaratiVoice = gujaratiVoice;
+      console.log(`✅ Gujarati voice found: ${gujaratiVoice.name}`);
+    } else {
+      console.log('⚠️ No native Gujarati voice found - will use English voice with Gujarati language setting');
+    }
+
+    // Try to find Hindi voice
+    const hindiVoice = voices.find(v => v.lang === 'hi-IN' || v.lang === 'hi');
+    if (hindiVoice) {
+      this.hindiVoice = hindiVoice;
+      console.log(`✅ Hindi voice found: ${hindiVoice.name}`);
     }
   }
 
-  // Still detect language for logging, but always use same voice
   detectLanguage(text) {
     const patterns = {
-      'hi': /[\u0900-\u097F]/i,
-      'gu': /[\u0A80-\u0AFF]/i,
+      'gu': /[\u0A80-\u0AFF]/i,  // Gujarati script
+      'hi': /[\u0900-\u097F]/i,  // Hindi script
       'es': /[¿¡áéíóúñÑ]/i,
       'fr': /[àâçéèêëîïôûùüÿœ]/i,
       'de': /[äöüß]/i,
     };
-    
+
     for (const [lang, pattern] of Object.entries(patterns)) {
       if (pattern.test(text)) return lang;
     }
     return 'en';
   }
 
-  speak(text, onEndCallback = null) {
-    console.log('🔊 speak() called with text:', text?.substring(0, 100));
-    
+  getVoiceForLanguage(languageCode, detectedLang) {
+    // Return appropriate voice based on language
+    if (languageCode === 'gu-IN' || detectedLang === 'gu') {
+      return this.gujaratiVoice || this.englishVoice;
+    }
+    if (languageCode === 'hi-IN' || detectedLang === 'hi') {
+      return this.hindiVoice || this.englishVoice;
+    }
+    return this.englishVoice;
+  }
+
+  speak(text, selectedLanguage = 'English', onEndCallback = null) {
+    console.log('🔊 speak() called with selected language:', selectedLanguage);
+    console.log('🔊 Text:', text?.substring(0, 100));
+
     if (!this.synthesis) {
       console.error('❌ Speech synthesis not supported');
       if (onEndCallback) onEndCallback();
       return;
     }
-    
+
     if (!text || text.trim() === '') {
       console.log('⚠️ Empty text, nothing to speak');
       if (onEndCallback) onEndCallback();
       return;
     }
 
-    // Detect language (just for logging)
+    // Detect language from text
     const detectedLang = this.detectLanguage(text);
-    console.log(`🌍 Detected language: ${detectedLang} (using same English voice)`);
+    console.log(`🌍 Detected script: ${detectedLang}`);
+
+    // Map selected language to language code
+    const languageMap = {
+      'English': 'en-US',
+      'Gujarati': 'gu-IN',
+      'Hindi': 'hi-IN',
+      'Spanish': 'es-ES',
+      'French': 'fr-FR',
+      'German': 'de-DE'
+    };
+
+    const targetLangCode = languageMap[selectedLanguage] || 'en-US';
+    console.log(`🎯 Target language code: ${targetLangCode}`);
 
     // Cancel any ongoing speech
     this.stop();
@@ -103,21 +143,33 @@ class TextToSpeechService {
     setTimeout(() => {
       try {
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // FORCE: Use the SAME English voice for EVERYTHING
-        if (this.consistentVoice) {
-          utterance.voice = this.consistentVoice;
-          console.log(`🎤 Using consistent voice: ${this.consistentVoice.name}`);
+
+        // Get the appropriate voice
+        const voice = this.getVoiceForLanguage(targetLangCode, detectedLang);
+        if (voice) {
+          utterance.voice = voice;
+          console.log(`🎤 Using voice: ${voice.name} (${voice.lang})`);
         }
-        
-        // FORCE: Always use English language settings
-        utterance.lang = 'en-US';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.2;  // Female voice pitch
+
+        // Set the correct language code
+        utterance.lang = targetLangCode;
+
+        // Adjust rate and pitch based on language
+        if (targetLangCode === 'gu-IN') {
+          utterance.rate = 0.85;  // Slightly slower for Gujarati clarity
+          utterance.pitch = 1.1;
+        } else if (targetLangCode === 'hi-IN') {
+          utterance.rate = 0.9;
+          utterance.pitch = 1.1;
+        } else {
+          utterance.rate = 0.95;
+          utterance.pitch = 1.2;
+        }
+
         utterance.volume = 1;
 
         utterance.onstart = () => {
-          console.log('🔊 Started speaking');
+          console.log(`🔊 Started speaking in ${selectedLanguage}`);
           this.isSpeaking = true;
           this.currentUtterance = utterance;
           if (this.onStart) this.onStart();
@@ -158,7 +210,7 @@ class TextToSpeechService {
   isSupported() {
     return typeof window !== 'undefined' && window.speechSynthesis !== undefined;
   }
-  
+
   getAvailableVoices() {
     return this.synthesis?.getVoices() || [];
   }
